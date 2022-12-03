@@ -1,13 +1,15 @@
 const Sauce = require('../models/sauce');
 const fs = require('fs');
 exports.createSauce = (req, res, next) => {
+    //console.log(req.file+" "+res );
     const sauceObject = JSON.parse(req.body.sauce);
     delete sauceObject._id;
     delete sauceObject._userId;
+    let filename = (req.file != undefined) ? req.file.filename : "default.jpg"
     const sauce = new Sauce({
         ...sauceObject,
         userId: req.auth.userId,
-        imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
+        imageUrl: `${req.protocol}://${req.get('host')}/images/${filename}`
     });
 
     sauce.save()
@@ -40,11 +42,11 @@ exports.likeSauce = (req, res, next) => {
         .then((sauce) => {
             //console.log(like);
             switch (like) {
-                case 0: actionLike = (sauce.usersDisliked.includes(req.body.userId)) ? actionLike = { $pull: { usersDisliked: req.body.userId }, $inc: { dislikes: -1 } } : actionLike ;
-                actionLike = (sauce.usersLiked.includes(req.body.userId)) ? { $pull: { usersLiked: req.body.userId }, $inc: { likes: -1 } } : actionLike      
-                break;
+                case 0: actionLike = (sauce.usersDisliked.includes(req.body.userId)) ? { $pull: { usersDisliked: req.body.userId }, $inc: { dislikes: -1 } } : actionLike;
+                    actionLike = (sauce.usersLiked.includes(req.body.userId)) ? { $pull: { usersLiked: req.body.userId }, $inc: { likes: -1 } } : actionLike
+                    break;
                 case 1: actionLike = { $push: { usersLiked: req.body.userId }, $inc: { likes: +1 } }
-                break;
+                    break;
                 case -1: actionLike = { $push: { usersDisliked: req.body.userId }, $inc: { dislikes: +1 } }
             }
             Sauce.updateOne({ _id: idSauce }, actionLike)
@@ -56,19 +58,25 @@ exports.likeSauce = (req, res, next) => {
         });
 }
 exports.modifySauce = (req, res, next) => {
-
-    const sauceObject = req.file ? {
+    
+    const sauceObject = req.file && req.file != undefined ? {
         ...JSON.parse(req.body.sauce),
         imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
     } : { ...req.body };
-
     delete sauceObject._userId;
     Sauce.findOne({ _id: req.params.id })
         .then((sauce) => {
-            //console.log(Sauce);
             if (sauce.userId != req.auth.userId) {
                 res.status(401).json({ message: 'Not authorized' });
             } else {
+                if (req.file) {
+                    const filename = sauce.imageUrl.split('/images/')[1];
+                    if (filename != "default.jpg") {
+                        fs.unlink(`images/${filename}`, (err) => {
+                            if (err) { console.log(err); }
+                        });
+                    }
+                }
                 Sauce.updateOne({ _id: req.params.id }, { ...sauceObject, _id: req.params.id })
                     .then(() => res.status(200).json({ message: 'Sauce modifié!' }))
                     .catch(error => res.status(401).json({ error }));
@@ -81,11 +89,11 @@ exports.modifySauce = (req, res, next) => {
 
 exports.deleteSauce = (req, res, next) => {
     Sauce.findOne({ _id: req.params.id })
-        .then(Sauce => {
-            if (Sauce.userId != req.auth.userId) {
+        .then(sauce => {
+            if (sauce.userId != req.auth.userId) {
                 res.status(401).json({ message: 'Not authorized' });
             } else {
-                const filename = Sauce.imageUrl.split('/images/')[1];
+                const filename = sauce.imageUrl.split('/images/')[1];
                 fs.unlink(`images/${filename}`, () => {
                     Sauce.deleteOne({ _id: req.params.id })
                         .then(() => { res.status(200).json({ message: 'Sauce supprimé !' }) })
