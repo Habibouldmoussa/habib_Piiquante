@@ -1,5 +1,6 @@
+// Importation des models et des plugin nécessaire 
 const mongoose = require('mongoose');
-
+// Le schema de la table de sauce de la base de donnée 
 const sauceSchema = mongoose.Schema({
     userId: { type: String, required: true },
     name: { type: String, required: true },
@@ -8,10 +9,10 @@ const sauceSchema = mongoose.Schema({
     mainPepper: { type: String, required: true },
     imageUrl: { type: String, required: true },
     heat: { type: Number, required: true },
-    likes: { type: Number, default: 0, required: true},
+    likes: { type: Number, default: 0, required: true },
     dislikes: { type: Number, default: 0, required: true },
-    usersLiked: { type: Array, default: [] , required: true },
-    usersDisliked: { type: Array, default: [], required: true}
+    usersLiked: { type: Array, default: [], required: true },
+    usersDisliked: { type: Array, default: [], required: true }
 });
 
 module.exports = mongoose.model('Sauce', sauceSchema);
