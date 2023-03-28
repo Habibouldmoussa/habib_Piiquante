@@ -33,7 +33,9 @@ app.use(rateLimit);
 app.use(helmet.crossOriginResourcePolicy({ policy: "same-site" }));
 // on configure quelques regle de cross control  
 app.use((req, res, next) => {
+
     // on indique que les ressources peuvent être partagées depuis n'importe quelle origine
+    res.setHeader('Cross-Origin-Resource-Policy', '*');
     res.setHeader('Access-Control-Allow-Origin', '*');
     // on indique les entêtes qui seront utilisées après la pré-vérification cross-origin afin de donner l'autorisation
     res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content, Accept, Content-Type, Authorization');
